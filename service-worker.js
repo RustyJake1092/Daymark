@@ -1,5 +1,5 @@
-const CACHE_NAME = 'daymark-shell-v1';
-const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './daymark-icon.svg'];
+const CACHE_NAME = 'daymark-shell-v2';
+const APP_SHELL = ['./', './index.html', './student-planner.css', './student-planner.js', './manifest.webmanifest', './daymark-icon.svg'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));

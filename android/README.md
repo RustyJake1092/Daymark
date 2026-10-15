@@ -1,6 +1,6 @@
 # Daymark for Android
 
-This is an installable Android app that displays the planner bundled inside the app. It does not need a hosted website URL. The app stores events on this device in Android WebView local storage; it does not sync with the browser version or other devices.
+This is an installable Android app with the student dashboard, class timetable and countdown, attendance tracker, assignment and event deadlines, focus timer, and budget tracker bundled inside the APK. It does not need a hosted website URL. Planner data is stored on this device in Android WebView local storage and does not sync with the browser version or other devices.
 
 ## Build the APK
 
@@ -14,4 +14,4 @@ Android may ask you to allow installs from the file manager or browser used to o
 
 ## Current build status
 
-The source project is prepared, but no APK has been generated in this workspace: it has no JDK or Android SDK and only about 168 MB of free disk space, which is not enough to install the build toolchain. Build it in Android Studio on a computer with the required SDK space, then transfer the APK to the phone.
+The GitHub Actions workflow builds a debug APK and attaches it to a prerelease whenever Android app files change on `main`. Open the repository's **Releases** page, download `app-debug.apk`, transfer it to the Android phone, then open the file to install. Android may ask you to allow installs from the app used to open the APK.

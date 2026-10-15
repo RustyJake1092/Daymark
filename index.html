@@ -3,16 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f7f7f4">
+  <meta name="theme-color" content="#f4f5f1">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>Daymark — Weekly planner</title>
+  <title>Daymark — Student planner</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./daymark-icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./daymark-icon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./student-planner.css">
   <style>
     :root {
       color-scheme: light;
@@ -148,6 +149,7 @@
   </style>
 </head>
 <body>
+  <div id="studentApp"></div>
   <div class="app">
     <aside class="sidebar" aria-label="Planner navigation">
       <div class="brand"><span class="brand-mark" aria-hidden="true">d</span><span class="brand-name">daymark</span></div>
@@ -359,5 +361,6 @@
       render();
     })();
   </script>
+  <script src="./student-planner.js"></script>
 </body>
 </html>
