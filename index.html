@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f7f4">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Daymark — Weekly planner</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./daymark-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./daymark-icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f7f7f4;
+      --white: #fff;
+      --ink: #222722;
+      --muted: #81877f;
+      --line: #e8e9e3;
+      --green: #42664d;
+      --green-light: #e5eee3;
+      --coral: #df7966;
+      --yellow: #e8c875;
+      --blue: #7894b2;
+      --lavender: #a38cb4;
+      --sidebar-width: 232px;
+      --right-width: 270px;
+      font-family: 'DM Sans', sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--paper); color: var(--ink); }
+    button, input, select { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+    .app { display: grid; grid-template-columns: var(--sidebar-width) minmax(0, 1fr); min-height: 100vh; }
+    .sidebar { display: flex; flex-direction: column; gap: 30px; padding: 27px 18px 20px; border-right: 1px solid var(--line); background: #fbfbf9; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 0 10px; }
+    .brand-mark { display: grid; place-items: center; width: 31px; height: 31px; border-radius: 10px 10px 10px 3px; background: var(--green); color: white; font-family: 'Playfair Display', serif; font-size: 22px; line-height: 1; }
+    .brand-name { font-size: 17px; font-weight: 700; letter-spacing: 0; }
+    .create-button { display: flex; justify-content: center; align-items: center; gap: 9px; min-height: 43px; border: 0; border-radius: 7px; background: var(--green); color: white; font-weight: 600; cursor: pointer; transition: background .16s, transform .16s; }
+    .create-button:hover { background: #35563e; transform: translateY(-1px); }
+    .plus { font-size: 19px; line-height: 1; font-weight: 400; }
+    .sidebar-section { display: grid; gap: 13px; }
+    .section-heading { display: flex; justify-content: space-between; align-items: center; padding: 0 6px; }
+    .section-heading h2 { margin: 0; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; letter-spacing: 0; color: var(--muted); text-transform: uppercase; }
+    .month-controls { display: flex; gap: 2px; }
+    .icon-button { display: inline-grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 6px; background: transparent; color: #687067; cursor: pointer; }
+    .icon-button:hover { background: #eeefe9; }
+    .icon-button svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 1.7; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .mini-month { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px 0; text-align: center; }
+    .mini-weekday { padding: 3px 0 6px; color: #a0a49d; font-family: 'DM Mono', monospace; font-size: 9px; }
+    .mini-day { position: relative; display: grid; place-items: center; aspect-ratio: 1; width: 27px; margin: auto; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #5d645b; font-size: 11px; cursor: pointer; }
+    .mini-day:hover { background: #eeefe9; }
+    .mini-day.outside { color: #c3c6bf; }
+    .mini-day.selected { background: var(--green); color: white; }
+    .mini-day.today:not(.selected) { box-shadow: inset 0 0 0 1px #a4b59e; }
+    .mini-day.has-event::after { content: ''; position: absolute; bottom: 2px; width: 3px; height: 3px; border-radius: 50%; background: var(--coral); }
+    .mini-day.selected.has-event::after { background: white; }
+    .calendar-list { display: grid; gap: 12px; }
+    .calendar-toggle { display: flex; align-items: center; gap: 10px; color: #555d54; font-size: 12px; cursor: pointer; }
+    .calendar-toggle input { position: absolute; opacity: 0; }
+    .checkmark { display: grid; place-items: center; width: 15px; height: 15px; border: 1px solid #c6cbc1; border-radius: 4px; color: transparent; }
+    .calendar-toggle input:checked + .checkmark { border-color: var(--tone); background: var(--tone); color: white; }
+    .calendar-toggle input:checked + .checkmark::after { content: '✓'; font-size: 10px; line-height: 1; }
+    .calendar-toggle input:focus-visible + .checkmark { outline: 2px solid var(--green); outline-offset: 2px; }
+    .sidebar-foot { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 14px 8px 2px; border-top: 1px solid var(--line); }
+    .avatar { display: grid; place-items: center; width: 31px; height: 31px; border-radius: 50%; background: #ead8c7; color: #765641; font-family: 'Playfair Display', serif; font-size: 14px; }
+    .user-name { font-size: 11px; font-weight: 600; }
+    .user-plan { margin-top: 2px; color: var(--muted); font-size: 10px; }
+    .main { min-width: 0; padding: 27px 27px 24px; }
+    .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 22px; }
+    .eyebrow { margin: 0 0 4px; color: var(--green); font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; }
+    .page-title { margin: 0; font-family: 'Playfair Display', serif; font-size: 29px; font-weight: 500; line-height: 1.25; }
+    .top-actions { display: flex; align-items: center; gap: 9px; padding-top: 3px; }
+    .today-button { min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: white; font-size: 11px; font-weight: 600; cursor: pointer; }
+    .today-button:hover { border-color: #bbc3b8; }
+    .install-button { flex: 0 0 auto; }
+    .view-switch { display: flex; padding: 3px; border: 1px solid var(--line); border-radius: 7px; background: white; }
+    .view-button { padding: 6px 10px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 10px; cursor: pointer; }
+    .view-button.active { background: var(--green-light); color: #36543d; font-weight: 600; }
+    .content-grid { display: grid; grid-template-columns: minmax(500px, 1fr) var(--right-width); gap: 22px; align-items: start; }
+    .calendar-panel { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--white); }
+    .week-heading { display: grid; grid-template-columns: 51px repeat(7, minmax(74px, 1fr)); border-bottom: 1px solid var(--line); }
+    .week-nav { display: flex; align-items: center; justify-content: center; }
+    .day-heading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 66px; border-left: 1px solid var(--line); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; }
+    .day-heading strong { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 50%; color: var(--ink); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; }
+    .day-heading.is-today { color: var(--green); }
+    .day-heading.is-today strong { background: var(--green); color: white; }
+    .calendar-scroll { overflow: auto; max-height: min(68vh, 680px); scrollbar-color: #d7dbd3 transparent; scrollbar-width: thin; }
+    .time-grid { position: relative; display: grid; grid-template-columns: 51px repeat(7, minmax(74px, 1fr)); grid-template-rows: repeat(13, 59px); min-width: 620px; }
+    .hour-label { display: flex; justify-content: center; position: relative; top: -7px; color: #a2a69e; font-family: 'DM Mono', monospace; font-size: 9px; }
+    .hour-label:first-child { top: 9px; }
+    .day-track { position: relative; grid-row: 1 / span 13; border-left: 1px solid var(--line); background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 58px, var(--line) 58px, var(--line) 59px); }
+    .day-track.weekend { background-color: #fcfcfa; }
+    .event { position: absolute; left: 4px; right: 4px; z-index: 2; overflow: hidden; padding: 6px 7px; border: 0; border-left: 3px solid var(--tone); border-radius: 4px; background: var(--wash); color: #39423a; text-align: left; cursor: pointer; transition: filter .15s, transform .15s; }
+    .event:hover { z-index: 4; filter: saturate(1.15); transform: translateY(-1px); }
+    .event-title { display: block; overflow: hidden; font-size: 10px; font-weight: 700; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
+    .event-time { display: block; margin-top: 3px; color: #697167; font-family: 'DM Mono', monospace; font-size: 8px; }
+    .now-line { position: absolute; z-index: 3; left: 51px; right: 0; height: 1px; background: var(--coral); pointer-events: none; }
+    .now-line::before { content: ''; position: absolute; top: -3px; left: -3px; width: 7px; height: 7px; border-radius: 50%; background: var(--coral); }
+    .agenda { display: grid; gap: 18px; padding-top: 3px; }
+    .agenda-head { display: flex; align-items: baseline; justify-content: space-between; }
+    .agenda-head h2 { margin: 0; font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 500; }
+    .agenda-count { color: var(--muted); font-family: 'DM Mono', monospace; font-size: 9px; }
+    .focus-note { display: flex; gap: 11px; padding: 14px 13px; border-left: 3px solid var(--yellow); background: #f3efdf; }
+    .sun-icon { color: #a18743; font-size: 17px; line-height: 1; }
+    .focus-copy strong { display: block; margin-bottom: 3px; font-size: 11px; }
+    .focus-copy span { display: block; color: #77766b; font-size: 10px; line-height: 1.5; }
+    .agenda-list { display: grid; gap: 0; }
+    .agenda-item { display: grid; grid-template-columns: 45px 9px 1fr; gap: 9px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--line); }
+    .agenda-time { padding-top: 1px; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 9px; }
+    .agenda-dot { width: 7px; height: 7px; margin-top: 3px; border-radius: 50%; background: var(--tone); }
+    .agenda-item strong { display: block; font-size: 11px; font-weight: 600; }
+    .agenda-item span { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; }
+    .empty-agenda { padding: 14px 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+    .quick-add { display: flex; align-items: center; gap: 8px; padding: 9px 0; border: 0; background: transparent; color: var(--green); font-size: 11px; font-weight: 600; cursor: pointer; }
+    .quick-add:hover { color: #263e2c; }
+    .quick-add span { font-size: 17px; font-weight: 400; }
+    .modal { width: min(420px, calc(100vw - 30px)); padding: 0; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink); box-shadow: 0 18px 70px #2227222a; }
+    .modal::backdrop { background: #20282066; backdrop-filter: blur(2px); }
+    .modal-form { display: grid; gap: 16px; padding: 23px; }
+    .modal-top { display: flex; justify-content: space-between; align-items: center; }
+    .modal-top h2 { margin: 0; font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 500; }
+    .field { display: grid; gap: 6px; }
+    .field label { color: #687067; font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; }
+    .field input, .field select { width: 100%; min-height: 39px; padding: 0 10px; border: 1px solid var(--line); border-radius: 5px; background: white; color: var(--ink); font-size: 12px; }
+    .field input[type="text"] { font-size: 14px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .modal-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 3px; }
+    .modal-actions-right { display: flex; gap: 8px; margin-left: auto; }
+    .text-button { padding: 8px 10px; border: 0; border-radius: 5px; background: transparent; color: #a54f42; font-size: 11px; cursor: pointer; }
+    .text-button[hidden] { display: none; }
+    .cancel-button { padding: 8px 11px; border: 1px solid var(--line); border-radius: 5px; background: white; font-size: 11px; cursor: pointer; }
+    .save-button { padding: 8px 14px; border: 0; border-radius: 5px; background: var(--green); color: white; font-size: 11px; font-weight: 600; cursor: pointer; }
+    .toast { position: fixed; right: 22px; bottom: 20px; z-index: 10; padding: 11px 15px; border-radius: 6px; background: #283d2e; color: white; font-size: 11px; opacity: 0; pointer-events: none; transform: translateY(8px); transition: .2s; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    @media (min-width: 1500px) { .app { grid-template-columns: 250px minmax(0, 1fr); } .main { padding: 34px 38px; } .content-grid { gap: 28px; } }
+    @media (max-width: 1120px) { :root { --sidebar-width: 205px; --right-width: 235px; } .main { padding: 24px 20px; } .content-grid { grid-template-columns: minmax(450px, 1fr); } .agenda { grid-template-columns: 1fr 1fr; align-items: start; gap: 14px 24px; } .agenda-head { grid-column: 1 / -1; } .agenda-list { grid-column: 1; grid-row: 2 / span 2; } .quick-add { grid-column: 2; grid-row: 3; } }
+    @media (max-width: 720px) { .app { display: block; } .sidebar { display: none; } .main { padding: 20px 14px; } .topbar { align-items: center; gap: 10px; margin-bottom: 17px; } .page-title { font-size: 24px; } .eyebrow { font-size: 9px; } .top-actions { gap: 5px; } .view-switch { display: none; } .today-button { padding: 0 9px; font-size: 10px; } .content-grid { grid-template-columns: minmax(0, 1fr); gap: 21px; } .calendar-panel { border-radius: 6px; } .week-heading { grid-template-columns: 39px repeat(7, minmax(48px, 1fr)); } .day-heading { min-height: 55px; gap: 4px; font-size: 8px; } .day-heading strong { width: 24px; height: 24px; font-size: 11px; } .time-grid { grid-template-columns: 39px repeat(7, minmax(48px, 1fr)); min-width: 0; grid-template-rows: repeat(13, 54px); } .day-track { background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 53px, var(--line) 53px, var(--line) 54px); } .hour-label { font-size: 8px; } .event { left: 2px; right: 2px; padding: 5px 3px; border-left-width: 2px; } .event-title { font-size: 8px; } .event-time { font-size: 7px; } .now-line { left: 39px; } .agenda { grid-template-columns: 1fr; gap: 13px; } .agenda-head, .agenda-list, .quick-add { grid-column: auto; grid-row: auto; } .focus-note { order: 2; } .agenda-list { order: 3; } .quick-add { order: 4; } .agenda-head { order: 1; } .calendar-scroll { max-height: 55vh; } }
+    @media (max-width: 390px) { .main { padding-inline: 9px; } .topbar { align-items: flex-start; } .page-title { font-size: 21px; } .today-button { min-height: 31px; padding: 0 7px; } .week-heading { grid-template-columns: 34px repeat(7, minmax(42px, 1fr)); } .time-grid { grid-template-columns: 34px repeat(7, minmax(42px, 1fr)); } .now-line { left: 34px; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="Planner navigation">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">d</span><span class="brand-name">daymark</span></div>
+      <button class="create-button" id="createEvent"><span class="plus" aria-hidden="true">+</span> New event</button>
+      <section class="sidebar-section" aria-label="Mini calendar">
+        <div class="section-heading"><h2 id="miniMonthTitle"></h2><div class="month-controls"><button class="icon-button" id="miniPrev" aria-label="Previous month"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button><button class="icon-button" id="miniNext" aria-label="Next month"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button></div></div>
+        <div class="mini-month" id="miniMonth"></div>
+      </section>
+      <section class="sidebar-section">
+        <div class="section-heading"><h2>My calendars</h2></div>
+        <div class="calendar-list" id="calendarFilters"></div>
+      </section>
+      <div class="sidebar-foot"><div class="avatar" aria-hidden="true">S</div><div><div class="user-name">Sam Rivera</div><div class="user-plan">Personal planner</div></div></div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div><p class="eyebrow" id="weekLabel">Your time, in view</p><h1 class="page-title" id="pageTitle">This week</h1></div>
+        <div class="top-actions">
+          <button class="today-button" id="todayButton">Today</button>
+          <button class="icon-button install-button" id="installButton" aria-label="Install Daymark" title="Install Daymark"><svg viewBox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 16v4h14v-4"/></svg></button>
+          <div class="view-switch" aria-label="Calendar view"><button class="view-button active" data-view="week">Week</button><button class="view-button" data-view="day">Day</button></div>
+          <button class="icon-button" id="prevWeek" aria-label="Previous week"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+          <button class="icon-button" id="nextWeek" aria-label="Next week"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+        </div>
+      </header>
+      <div class="content-grid">
+        <section class="calendar-panel" aria-label="Weekly calendar">
+          <div class="week-heading" id="weekHeading"></div>
+          <div class="calendar-scroll"><div class="time-grid" id="timeGrid"></div></div>
+        </section>
+        <aside class="agenda" aria-label="Selected day agenda">
+          <div class="agenda-head"><h2 id="agendaTitle">On your plate</h2><span class="agenda-count" id="agendaCount"></span></div>
+          <div class="focus-note"><span class="sun-icon" aria-hidden="true">☼</span><div class="focus-copy"><strong>A little breathing room</strong><span>Leave space between plans. Your future self will thank you.</span></div></div>
+          <div class="agenda-list" id="agendaList"></div>
+          <button class="quick-add" id="quickAdd"><span aria-hidden="true">+</span> Add to this day</button>
+        </aside>
+      </div>
+    </main>
+  </div>
+  <dialog class="modal" id="eventDialog">
+    <form class="modal-form" id="eventForm">
+      <div class="modal-top"><h2 id="dialogTitle">Make a little plan</h2><button type="button" class="icon-button" id="closeDialog" aria-label="Close"><svg viewBox="0 0 24 24"><path d="m18 6-12 12M6 6l12 12"/></svg></button></div>
+      <div class="field"><label for="eventName">Event name</label><input id="eventName" name="title" type="text" placeholder="What are you planning?" maxlength="70" required></div>
+      <div class="field"><label for="eventCategory">Calendar</label><select id="eventCategory" name="category"><option value="work">Work</option><option value="personal">Personal</option><option value="wellness">Wellness</option><option value="family">Family</option></select></div>
+      <div class="field"><label for="eventDate">Date</label><input id="eventDate" name="date" type="date" required></div>
+      <div class="form-row"><div class="field"><label for="eventStart">Starts</label><input id="eventStart" name="start" type="time" value="09:00" required></div><div class="field"><label for="eventEnd">Ends</label><input id="eventEnd" name="end" type="time" value="10:00" required></div></div>
+      <div class="modal-actions"><button type="button" class="text-button" id="deleteEvent" hidden>Delete event</button><div class="modal-actions-right"><button type="button" class="cancel-button" id="cancelDialog">Cancel</button><button type="submit" class="save-button">Save event</button></div></div>
+    </form>
+  </dialog>
+  <dialog class="modal" id="installDialog">
+    <div class="modal-form">
+      <div class="modal-top"><h2>Take Daymark with you</h2><button type="button" class="icon-button" id="closeInstallDialog" aria-label="Close"><svg viewBox="0 0 24 24"><path d="m18 6-12 12M6 6l12 12"/></svg></button></div>
+      <p id="installInstructions" style="margin:0;color:#687067;font-size:13px;line-height:1.65"></p>
+      <div class="modal-actions"><span></span><button type="button" class="save-button" id="doneInstallDialog">Got it</button></div>
+    </div>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+    (() => {
+      const HOUR_HEIGHT = 59;
+      const START_HOUR = 8;
+      const END_HOUR = 21;
+      const categories = {
+        work: { label: 'Work', tone: '#7894b2', wash: '#edf2f7' },
+        personal: { label: 'Personal', tone: '#df7966', wash: '#faeee9' },
+        wellness: { label: 'Wellness', tone: '#789270', wash: '#edf2e9' },
+        family: { label: 'Family', tone: '#b398c1', wash: '#f2edf5' }
+      };
+      const today = new Date();
+      const state = {
+        selected: new Date(today.getFullYear(), today.getMonth(), today.getDate()),
+        view: 'week',
+        visible: Object.keys(categories).reduce((result, key) => ({ ...result, [key]: true }), {}),
+        editingId: null,
+        events: loadEvents()
+      };
+      const byId = (id) => document.getElementById(id);
+      function dateKey(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
+      function parseDate(key) { const [year, month, day] = key.split('-').map(Number); return new Date(year, month - 1, day); }
+      function startOfWeek(date) { const result = new Date(date.getFullYear(), date.getMonth(), date.getDate()); result.setDate(result.getDate() - ((result.getDay() + 6) % 7)); return result; }
+      function addDays(date, amount) { const result = new Date(date); result.setDate(result.getDate() + amount); return result; }
+      const sameDay = (first, second) => dateKey(first) === dateKey(second);
+      const dateLabel = (date, options) => new Intl.DateTimeFormat(undefined, options).format(date);
+      const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+      function loadEvents() {
+        try {
+          const saved = JSON.parse(localStorage.getItem('daymark-events') || 'null');
+          if (Array.isArray(saved)) return saved;
+        } catch { /* Use the starter week if browser storage is unavailable. */ }
+        const monday = startOfWeek(today);
+        const seed = [
+          [0, 'Weekly reset', '08:30', '09:15', 'personal'], [0, 'Focus time', '10:00', '12:00', 'work'], [0, 'Project sync', '13:00', '14:00', 'work'], [0, 'Walk outside', '15:30', '16:00', 'wellness'],
+          [1, 'Design review', '09:30', '10:30', 'work'], [1, 'Lunch with Alex', '12:00', '13:00', 'personal'], [1, 'Deep work', '14:00', '16:00', 'work'],
+          [2, 'Morning stretch', '08:30', '09:00', 'wellness'], [2, 'Team stand-up', '10:00', '10:45', 'work'], [2, 'Pick up flowers', '16:00', '16:30', 'personal'],
+          [3, 'Client check-in', '09:00', '10:00', 'work'], [3, 'Lunch & learn', '12:00', '13:00', 'work'], [3, 'Call Mum', '17:00', '17:30', 'family'],
+          [4, 'Wrap up & plan', '10:00', '11:00', 'work'], [4, 'Farmers market', '15:00', '16:00', 'personal'], [5, 'Brunch together', '10:30', '12:00', 'family']
+        ];
+        return seed.map(([offset, title, start, end, category], index) => ({ id: `seed-${index}`, title, start, end, category, date: dateKey(addDays(monday, offset)) }));
+      }
+      function persist() { try { localStorage.setItem('daymark-events', JSON.stringify(state.events)); } catch { showToast('Browser storage is unavailable'); } }
+      function timeLabel(time) { const [hour, minute] = time.split(':').map(Number); const suffix = hour < 12 ? 'am' : 'pm'; return `${hour % 12 || 12}${minute ? `:${String(minute).padStart(2, '0')}` : ''} ${suffix}`; }
+      function render() { renderHeader(); renderMiniMonth(); renderFilters(); renderCalendar(); renderAgenda(); }
+      function renderHeader() {
+        const monday = startOfWeek(state.selected);
+        const sunday = addDays(monday, 6);
+        byId('weekLabel').textContent = `${dateLabel(state.selected, { weekday: 'long' })} · ${dateLabel(today, { month: 'long', year: 'numeric' })}`;
+        byId('pageTitle').textContent = state.view === 'day' ? dateLabel(state.selected, { weekday: 'long', month: 'long', day: 'numeric' }) : (monday.getMonth() === sunday.getMonth() ? `${dateLabel(monday, { month: 'long' })} ${monday.getFullYear()}` : `${dateLabel(monday, { month: 'short' })} – ${dateLabel(sunday, { month: 'short', year: 'numeric' })}`);
+        document.querySelectorAll('.view-button').forEach((button) => { const active = button.dataset.view === state.view; button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active)); });
+      }
+      function renderMiniMonth() {
+        const year = state.selected.getFullYear(); const month = state.selected.getMonth();
+        byId('miniMonthTitle').textContent = dateLabel(state.selected, { month: 'long', year: 'numeric' });
+        const first = new Date(year, month, 1); const offset = (first.getDay() + 6) % 7; const count = new Date(year, month + 1, 0).getDate();
+        const start = new Date(year, month, 1 - offset);
+        const headings = ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day) => `<span class="mini-weekday">${day}</span>`).join('');
+        let days = '';
+        for (let index = 0; index < 42; index++) {
+          const date = addDays(start, index); const key = dateKey(date);
+          const classes = ['mini-day', date.getMonth() !== month ? 'outside' : '', sameDay(date, state.selected) ? 'selected' : '', sameDay(date, today) ? 'today' : '', state.events.some((event) => event.date === key) ? 'has-event' : ''].filter(Boolean).join(' ');
+          days += `<button class="${classes}" data-date="${key}" aria-label="${dateLabel(date, { month: 'long', day: 'numeric', year: 'numeric' })}" aria-pressed="${sameDay(date, state.selected)}">${date.getDate()}</button>`;
+        }
+        byId('miniMonth').innerHTML = headings + days;
+      }
+      function renderFilters() {
+        byId('calendarFilters').innerHTML = Object.entries(categories).map(([key, category]) => `<label class="calendar-toggle" style="--tone:${category.tone}"><input type="checkbox" data-category="${key}" ${state.visible[key] ? 'checked' : ''}><span class="checkmark" aria-hidden="true"></span>${category.label}</label>`).join('');
+      }
+      function renderCalendar() {
+        const monday = startOfWeek(state.selected);
+        const dates = Array.from({ length: 7 }, (_, index) => addDays(monday, index));
+        const chosen = state.view === 'day' ? dates.filter((date) => sameDay(date, state.selected)) : dates;
+        byId('weekHeading').innerHTML = '<div class="week-nav"></div>' + chosen.map((date) => `<div class="day-heading ${sameDay(date, today) ? 'is-today' : ''}"><span>${dateLabel(date, { weekday: 'short' })}</span><strong>${date.getDate()}</strong></div>`).join('');
+        const labels = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, index) => `<div class="hour-label" style="grid-row:${index + 1}">${timeLabel(`${String(START_HOUR + index).padStart(2, '0')}:00`)}</div>`).join('');
+        const tracks = chosen.map((date, dayIndex) => {
+          const events = state.events.filter((event) => event.date === dateKey(date) && state.visible[event.category]);
+          const blocks = events.map((event) => {
+            const category = categories[event.category] || categories.personal;
+            const [startHour, startMinute] = event.start.split(':').map(Number); const [endHour, endMinute] = event.end.split(':').map(Number);
+            const top = ((startHour - START_HOUR) + startMinute / 60) * HOUR_HEIGHT;
+            const height = Math.max(24, ((endHour - startHour) + (endMinute - startMinute) / 60) * HOUR_HEIGHT);
+            if (top + height < 0 || top > (END_HOUR - START_HOUR) * HOUR_HEIGHT) return '';
+            return `<button class="event" data-event="${escapeHtml(event.id)}" style="top:${Math.max(0, top)}px;height:${Math.max(20, Math.min(height, (END_HOUR - START_HOUR) * HOUR_HEIGHT - top))}px;--tone:${category.tone};--wash:${category.wash}" aria-label="${escapeHtml(event.title)}, ${timeLabel(event.start)} to ${timeLabel(event.end)}"><span class="event-title">${escapeHtml(event.title)}</span><span class="event-time">${timeLabel(event.start)}</span></button>`;
+          }).join('');
+          return `<div class="day-track ${dayIndex > 4 ? 'weekend' : ''}" style="grid-column:${dayIndex + 2}">${blocks}</div>`;
+        }).join('');
+        const nowHour = today.getHours() + today.getMinutes() / 60;
+        const nowLine = chosen.some((date) => sameDay(date, today)) && nowHour >= START_HOUR && nowHour < END_HOUR ? `<div class="now-line" style="top:${(nowHour - START_HOUR) * HOUR_HEIGHT}px"></div>` : '';
+        const gridTemplate = state.view === 'day' ? '39px 1fr' : null;
+        byId('timeGrid').style.gridTemplateColumns = gridTemplate || '';
+        byId('timeGrid').innerHTML = labels + tracks + nowLine;
+      }
+      function renderAgenda() {
+        byId('agendaTitle').textContent = sameDay(state.selected, today) ? 'On your plate' : dateLabel(state.selected, { weekday: 'long' });
+        const items = state.events.filter((event) => event.date === dateKey(state.selected) && state.visible[event.category]).sort((a, b) => a.start.localeCompare(b.start));
+        byId('agendaCount').textContent = `${items.length} ${items.length === 1 ? 'PLAN' : 'PLANS'}`;
+        byId('agendaList').innerHTML = items.length ? items.map((event) => `<div class="agenda-item"><span class="agenda-time">${timeLabel(event.start)}</span><span class="agenda-dot" style="--tone:${(categories[event.category] || categories.personal).tone}"></span><div><strong>${escapeHtml(event.title)}</strong><span>${timeLabel(event.start)} – ${timeLabel(event.end)} · ${(categories[event.category] || categories.personal).label}</span></div></div>`).join('') : '<div class="empty-agenda">Nothing on the calendar yet. Keep the day open, or add a plan.</div>';
+      }
+      function showToast(message) { const toast = byId('toast'); toast.textContent = message; toast.classList.add('show'); clearTimeout(showToast.timeout); showToast.timeout = setTimeout(() => toast.classList.remove('show'), 2400); }
+      function openEditor(date = state.selected, event = null) {
+        state.editingId = event?.id || null;
+        byId('eventForm').reset(); byId('dialogTitle').textContent = event ? 'Edit your plan' : 'Make a little plan';
+        byId('eventName').value = event?.title || ''; byId('eventDate').value = event?.date || dateKey(date); byId('eventStart').value = event?.start || '09:00'; byId('eventEnd').value = event?.end || '10:00'; byId('eventCategory').value = event?.category || 'work'; byId('deleteEvent').hidden = !event;
+        byId('eventDialog').showModal(); byId('eventName').focus();
+      }
+      byId('createEvent').addEventListener('click', () => openEditor());
+      byId('quickAdd').addEventListener('click', () => openEditor(state.selected));
+      byId('todayButton').addEventListener('click', () => { state.selected = new Date(today.getFullYear(), today.getMonth(), today.getDate()); render(); });
+      byId('prevWeek').addEventListener('click', () => { state.selected = addDays(state.selected, state.view === 'day' ? -1 : -7); render(); });
+      byId('nextWeek').addEventListener('click', () => { state.selected = addDays(state.selected, state.view === 'day' ? 1 : 7); render(); });
+      byId('miniPrev').addEventListener('click', () => { state.selected = new Date(state.selected.getFullYear(), state.selected.getMonth() - 1, 1); render(); });
+      byId('miniNext').addEventListener('click', () => { state.selected = new Date(state.selected.getFullYear(), state.selected.getMonth() + 1, 1); render(); });
+      document.querySelector('.view-switch').addEventListener('click', (event) => { const button = event.target.closest('[data-view]'); if (!button) return; state.view = button.dataset.view; render(); });
+      byId('miniMonth').addEventListener('click', (event) => { const button = event.target.closest('[data-date]'); if (!button) return; state.selected = parseDate(button.dataset.date); render(); });
+      byId('calendarFilters').addEventListener('change', (event) => { const input = event.target.closest('[data-category]'); if (!input) return; state.visible[input.dataset.category] = input.checked; renderCalendar(); renderAgenda(); });
+      byId('timeGrid').addEventListener('click', (event) => { const button = event.target.closest('[data-event]'); if (!button) return; const item = state.events.find((entry) => entry.id === button.dataset.event); if (item) openEditor(parseDate(item.date), item); });
+      byId('closeDialog').addEventListener('click', () => byId('eventDialog').close());
+      byId('cancelDialog').addEventListener('click', () => byId('eventDialog').close());
+      byId('eventDialog').addEventListener('click', (event) => { if (event.target === byId('eventDialog')) byId('eventDialog').close(); });
+      byId('eventForm').addEventListener('submit', (event) => {
+        event.preventDefault(); const form = new FormData(event.currentTarget); const start = form.get('start'); const end = form.get('end');
+        if (end <= start) { byId('eventEnd').setCustomValidity('End time must be after the start time.'); byId('eventEnd').reportValidity(); byId('eventEnd').setCustomValidity(''); return; }
+        const item = { id: state.editingId || `event-${Date.now()}`, title: String(form.get('title')).trim(), date: String(form.get('date')), start: String(start), end: String(end), category: String(form.get('category')) };
+        if (state.editingId) state.events = state.events.map((entry) => entry.id === state.editingId ? item : entry); else state.events.push(item);
+        state.selected = parseDate(item.date); persist(); byId('eventDialog').close(); render(); showToast(state.editingId ? 'Event updated' : 'Event added');
+      });
+      byId('deleteEvent').addEventListener('click', () => { if (!state.editingId) return; state.events = state.events.filter((event) => event.id !== state.editingId); persist(); byId('eventDialog').close(); render(); showToast('Event deleted'); });
+      let installPrompt = null;
+      const installDialog = byId('installDialog');
+      const isAppleMobile = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      byId('installButton').addEventListener('click', async () => {
+        if (installPrompt) {
+          installPrompt.prompt();
+          await installPrompt.userChoice;
+          installPrompt = null;
+          return;
+        }
+        byId('installInstructions').textContent = isAppleMobile
+          ? 'Open this page in Safari, tap the Share button, then choose “Add to Home Screen”.'
+          : 'In your browser menu, choose “Install app” or “Add to Home screen”. If that option is missing, open this page in Chrome over HTTPS first.';
+        installDialog.showModal();
+      });
+      byId('closeInstallDialog').addEventListener('click', () => installDialog.close());
+      byId('doneInstallDialog').addEventListener('click', () => installDialog.close());
+      installDialog.addEventListener('click', (event) => { if (event.target === installDialog) installDialog.close(); });
+      window.addEventListener('beforeinstallprompt', (event) => { event.preventDefault(); installPrompt = event; });
+      window.addEventListener('appinstalled', () => { installPrompt = null; showToast('Daymark is installed'); });
+      if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+        window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(() => {}));
+      }
+      render();
+    })();
+  </script>
+</body>
+</html>

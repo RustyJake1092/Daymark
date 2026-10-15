@@ -1,0 +1,13 @@
+# Android build outputs and local configuration
+.gradle/
+android/.gradle/
+android/local.properties
+android/**/build/
+android/.idea/
+*.apk
+*.aab
+*.jks
+*.keystore
+
+# Workspace-specific modernization artifacts
+.github/modernize/
