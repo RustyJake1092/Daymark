@@ -6,17 +6,10 @@
     ['tasks', 'Tasks', '☷'], ['study', 'Study', '◷'], ['budget', 'Budget', '$']
   ];
   const defaults = {
-    classes: [
-      { id: 'course-bio', name: 'Biology 204', teacher: 'Prof. Santos', room: 'Science 301', day: 1, start: '09:00', end: '10:30', tone: '#789270' },
-      { id: 'course-writing', name: 'Academic Writing', teacher: 'Ms. Cruz', room: 'Humanities 208', day: 1, start: '13:00', end: '14:30', tone: '#df7966' },
-      { id: 'course-stats', name: 'Statistics II', teacher: 'Dr. Lim', room: 'West Hall 114', day: 2, start: '10:00', end: '11:30', tone: '#7894b2' },
-      { id: 'course-history', name: 'Philippine History', teacher: 'Prof. Reyes', room: 'Humanities 106', day: 3, start: '09:30', end: '11:00', tone: '#a38cb4' },
-      { id: 'course-cs', name: 'Computer Science', teacher: 'Mr. Garcia', room: 'Tech Lab 2', day: 4, start: '10:00', end: '12:00', tone: '#42664d' },
-      { id: 'course-lab', name: 'Biology Lab', teacher: 'Prof. Santos', room: 'Science Lab', day: 4, start: '14:00', end: '16:00', tone: '#e0aa42' },
-      { id: 'course-econ', name: 'Microeconomics', teacher: 'Dr. Flores', room: 'East Hall 205', day: 5, start: '11:00', end: '12:30', tone: '#df7966' }
-    ],
-    tasks: [], attendance: {}, studySessions: [], expenses: [], monthlyBudget: 12000
+    classes: [], tasks: [], attendance: {}, studySessions: [], expenses: [], monthlyBudget: null
   };
+  const demoClassIds = new Set(['course-bio', 'course-writing', 'course-stats', 'course-history', 'course-cs', 'course-lab', 'course-econ']);
+  const demoTaskIds = new Set(['task-essay', 'task-lab', 'task-quiz', 'task-club']);
   const today = new Date();
   const todayKey = dateKey(today);
   const colors = ['#789270', '#df7966', '#7894b2', '#a38cb4', '#e0aa42', '#42664d'];
@@ -41,15 +34,19 @@
   function loadData() {
     try {
       const stored = JSON.parse(localStorage.getItem(STORE_KEY));
-      if (stored && Array.isArray(stored.classes) && Array.isArray(stored.tasks)) return { ...defaults, ...stored };
+      if (stored && Array.isArray(stored.classes) && Array.isArray(stored.tasks)) {
+        const data = { ...defaults, ...stored };
+        data.classes = data.classes.filter((item) => !demoClassIds.has(item.id));
+        data.tasks = data.tasks.filter((item) => !demoTaskIds.has(item.id));
+        Object.keys(data.attendance).forEach((key) => {
+          if ([...demoClassIds].some((id) => key.endsWith(`|${id}`))) delete data.attendance[key];
+        });
+        if (data.monthlyBudget === 12000) data.monthlyBudget = null;
+        try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch { /* Keep the cleaned data in memory if storage is unavailable. */ }
+        return data;
+      }
     } catch { /* Use the starter data if local storage is empty or unavailable. */ }
-    const tasks = [
-      { id: 'task-essay', title: 'Research essay: local history', courseId: 'course-writing', due: dateKey(shiftDate(today, 1)), priority: 'High', kind: 'Assignment', done: false },
-      { id: 'task-lab', title: 'Read chapter 6 before lab', courseId: 'course-bio', due: dateKey(shiftDate(today, 2)), priority: 'Normal', kind: 'Assignment', done: false },
-      { id: 'task-quiz', title: 'Statistics problem set', courseId: 'course-stats', due: dateKey(shiftDate(today, 4)), priority: 'High', kind: 'Assignment', done: false },
-      { id: 'task-club', title: 'Design club check-in', courseId: '', due: dateKey(shiftDate(today, 3)), priority: 'Normal', kind: 'Event', done: false }
-    ];
-    return { ...defaults, tasks, attendance: {} };
+    return { ...defaults };
   }
   function persist() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state.data)); }
@@ -200,6 +197,18 @@
         if (foot[0]?.textContent.endsWith('0 recorded')) foot[1].textContent = 'No records yet';
       });
     }
+    if (page && state.data.monthlyBudget === null && state.page === 'home') {
+      const budgetMetric = page.querySelector('.sp-metrics .sp-metric:last-child');
+      budgetMetric.querySelector('.sp-metric-value').textContent = '—';
+      budgetMetric.querySelector('.sp-metric-foot').textContent = 'Set a limit to track spending';
+    }
+    if (page && state.data.monthlyBudget === null && state.page === 'budget') {
+      page.querySelector('.sp-budget-total .sp-metric-value').textContent = 'Not set';
+      page.querySelector('.sp-budget-total .sp-metric-foot').textContent = 'Set a monthly limit to track remaining';
+      const budgetButton = page.querySelector('[data-new="budget"]');
+      budgetButton.querySelector('.sp-metric-value').textContent = 'Not set';
+      budgetButton.querySelector('.sp-metric-foot').textContent = 'Set monthly limit →';
+    }
     app.querySelectorAll('.sp-nav-button').forEach((button) => { button.classList.toggle('active', button.dataset.page === state.page); button.setAttribute('aria-current', button.dataset.page === state.page ? 'page' : 'false'); });
     if (state.page === 'home' || state.page === 'schedule') updateCountdowns();
     if (state.page === 'study') updateTimerDisplay();
@@ -250,7 +259,7 @@
     if (type === 'class') fields = `<div class="sp-field"><label>Class name</label><input name="name" maxlength="60" value="${escapeHtml(existing?.name || '')}" required></div><div class="sp-form-row"><div class="sp-field"><label>Day</label><select name="day">${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map((label, index) => `<option value="${index}" ${Number(existing?.day ?? today.getDay()) === index ? 'selected' : ''}>${label}</option>`).join('')}</select></div><div class="sp-field"><label>Room</label><input name="room" maxlength="45" value="${escapeHtml(existing?.room || '')}" placeholder="Room / location"></div></div><div class="sp-form-row"><div class="sp-field"><label>Starts</label><input name="start" type="time" value="${existing?.start || '09:00'}" required></div><div class="sp-field"><label>Ends</label><input name="end" type="time" value="${existing?.end || '10:00'}" required></div></div><div class="sp-field"><label>Instructor</label><input name="teacher" maxlength="45" value="${escapeHtml(existing?.teacher || '')}" placeholder="Optional"></div>`;
     if (type === 'task') fields = `<div class="sp-field"><label>Title</label><input name="title" maxlength="80" placeholder="What needs doing?" required></div><div class="sp-form-row"><div class="sp-field"><label>Type</label><select name="kind"><option>Assignment</option><option>Event</option><option>Reminder</option></select></div><div class="sp-field"><label>Priority</label><select name="priority"><option>Normal</option><option>High</option><option>Low</option></select></div></div><div class="sp-field"><label>Course</label><select name="courseId"><option value="">Personal</option>${state.data.classes.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('')}</select></div><div class="sp-field"><label>Due date</label><input name="due" type="date" value="${todayKey}" required></div>`;
     if (type === 'expense') fields = `<div class="sp-field"><label>What did you spend on?</label><input name="title" maxlength="60" placeholder="e.g. Lunch" required></div><div class="sp-form-row"><div class="sp-field"><label>Amount (PHP)</label><input name="amount" type="number" min="1" step="0.01" placeholder="0.00" required></div><div class="sp-field"><label>Category</label><select name="category">${moneyCategories.map((item) => `<option>${item}</option>`).join('')}</select></div></div><div class="sp-field"><label>Date</label><input name="date" type="date" value="${todayKey}" required></div>`;
-    if (type === 'budget') fields = `<div class="sp-field"><label>Monthly budget (PHP)</label><input name="budget" type="number" min="0" step="100" value="${Number(state.data.monthlyBudget) || 12000}" required></div><p style="margin:0;color:var(--sp-muted);font-size:9px">Your monthly limit stays on this device and can be changed any time.</p>`;
+    if (type === 'budget') fields = `<div class="sp-field"><label>Monthly budget (PHP)</label><input name="budget" type="number" min="0" step="100" value="${state.data.monthlyBudget ?? ''}" placeholder="Enter an amount" required></div><p style="margin:0;color:var(--sp-muted);font-size:9px">Your monthly limit stays on this device and can be changed any time.</p>`;
     form.innerHTML = `<div class="sp-dialog-head"><h2>${title}</h2><button type="button" class="sp-close" data-dialog-close aria-label="Close">×</button></div>${fields}${footer}`;
     form.querySelectorAll('[data-dialog-close]').forEach((button) => button.addEventListener('click', () => dialog.close()));
     if (existing) form.querySelector('[data-delete-class]').addEventListener('click', () => { dialog.close(); deleteItem('classes', existing.id, 'Class deleted'); });
