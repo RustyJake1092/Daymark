@@ -36,12 +36,13 @@
       const stored = JSON.parse(localStorage.getItem(STORE_KEY));
       if (stored && Array.isArray(stored.classes) && Array.isArray(stored.tasks)) {
         const data = { ...defaults, ...stored };
+        const hadDemoData = data.classes.some((item) => demoClassIds.has(item.id)) || data.tasks.some((item) => demoTaskIds.has(item.id));
         data.classes = data.classes.filter((item) => !demoClassIds.has(item.id));
         data.tasks = data.tasks.filter((item) => !demoTaskIds.has(item.id));
         Object.keys(data.attendance).forEach((key) => {
           if ([...demoClassIds].some((id) => key.endsWith(`|${id}`))) delete data.attendance[key];
         });
-        if (data.monthlyBudget === 12000) data.monthlyBudget = null;
+        if (hadDemoData && data.monthlyBudget === 12000) data.monthlyBudget = null;
         try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch { /* Keep the cleaned data in memory if storage is unavailable. */ }
         return data;
       }
